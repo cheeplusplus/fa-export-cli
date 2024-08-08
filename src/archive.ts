@@ -72,7 +72,7 @@ async function downloadSubmissions(
 }
 
 async function downloadPaginatedSet<T>(
-  iterator: AsyncGenerator<T[], T[], unknown>,
+  iterator: AsyncGenerator<T[], unknown, unknown>,
   basePath: string,
   prefix: string,
   dataOnly: boolean = false,
