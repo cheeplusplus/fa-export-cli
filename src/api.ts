@@ -13,6 +13,9 @@ export function getClient() {
     throw new Error("Cookies are missing from your settings.json");
   }
 
-  CACHED_CLIENT = new FurAffinityClient({ cookies: settings.cookies });
+  CACHED_CLIENT = new FurAffinityClient({
+    cookies: settings.cookies,
+    throwErrors: true,
+  });
   return CACHED_CLIENT;
 }

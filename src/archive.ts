@@ -98,7 +98,7 @@ async function archiveUser(
   const api = getClient();
   await fs.mkdir(basePath, { recursive: true });
 
-  console.log(`Archiving ${username}...`, opts);
+  console.log(`Archiving ${username}...`);
 
   if (!opts.favesOnly) {
     console.log(" > Profile");
