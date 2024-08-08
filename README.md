@@ -8,9 +8,9 @@ This is a CLI application to dump your FA gallery while the site is still alive.
 
 Grab the latest release for your platform from [Releases](https://github.com/cheeplusplus/fa-export-cli/releases).
 
-Windows and Linux are x64, filenames will probably be made more clear in the future.
+Windows and Linux are x64, Mac is ARM. Filenames will probably be made more clear in the future.
 
-MacOS support eventually. Due to code signing for now you'll have to build it yourself.
+You may experience issues on Windows and Mac due to code-signing (or a lack thereof)
 
 ### Running
 
