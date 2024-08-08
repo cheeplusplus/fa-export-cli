@@ -21,6 +21,21 @@ jobs:
           files: |
             build/fa-export-cli-linux
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "20.x"
+      - name: Build executable
+        run: ./build-macos.sh
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/fa-export-cli-macos
+
   build-windows:
     runs-on: windows-latest
     steps:
