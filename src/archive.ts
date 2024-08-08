@@ -25,6 +25,8 @@ async function downloadSubmissions(
       console.log(
         `    > Submission: ${submissionItem.title} by ${submissionItem.artist_name}`
       );
+
+      // Fetch the full submission details
       const fullSubmission = await client.getSubmission(submissionItem.id);
       if (!fullSubmission.content_url) {
         console.error(
@@ -33,11 +35,13 @@ async function downloadSubmissions(
         continue;
       }
 
+      // Write to JSON
       await fs.writeFile(
         path.join(dir, `${submissionItem.id}.json`),
         JSON.stringify(fullSubmission, undefined, 4)
       );
 
+      // Fetch the content data
       const contentFilename = path.join(
         dir,
         path.basename(fullSubmission.content_url)
@@ -49,6 +53,7 @@ async function downloadSubmissions(
 
       await delay(DEFAULT_DELAY_MS);
 
+      // Download and save the content data
       const res = await fetch(fullSubmission.content_url);
       if (!res.body) {
         console.error(`    X Submission ${submissionItem.id} had no body`);
@@ -66,23 +71,28 @@ async function downloadSubmissions(
   }
 }
 
-async function downloadSubmissionSet(
-  iterator: AsyncGenerator<SubmissionListing[], SubmissionListing[], unknown>,
+async function downloadPaginatedSet<T>(
+  iterator: AsyncGenerator<T[], T[], unknown>,
   basePath: string,
   prefix: string,
-  dataOnly: boolean
+  dataOnly: boolean = false,
+  downloader?: (basePath: string, page: T[]) => Promise<void>
 ) {
   let page = 1;
   for await (const pageData of iterator) {
     console.log(`   - Page ${page}`);
+
+    // Write the full page JSON
     await fs.writeFile(
       path.join(basePath, `${prefix}_page_${page}.json`),
       JSON.stringify(pageData, undefined, 4)
     );
+
     page += 1;
 
-    if (!dataOnly) {
-      await downloadSubmissions(basePath, pageData);
+    // Download contents if available
+    if (!dataOnly && downloader) {
+      await downloader(basePath, pageData);
     }
   }
 }
@@ -101,40 +111,53 @@ async function archiveUser(
   console.log(`Archiving ${username}...`);
 
   if (!opts.favesOnly) {
+    // Profile
     console.log(" > Profile");
     await writeJson("profile.json", await api.getUserPage(username));
     await delay(DEFAULT_DELAY_MS);
 
+    // Journals
     console.log(" > Journals");
-    await writeJson("journals.json", await api.getUserJournals(username));
+    await downloadPaginatedSet(
+      api.getUserJournals(username),
+      basePath,
+      "journals",
+      true
+    );
     await delay(DEFAULT_DELAY_MS);
 
+    // Gallery
     console.log(" > Gallery");
-    await downloadSubmissionSet(
+    await downloadPaginatedSet(
       api.getUserGallery(username),
       basePath,
       "gallery",
-      !!opts?.dataOnly
+      !!opts?.dataOnly,
+      downloadSubmissions
     );
     await delay(DEFAULT_DELAY_MS);
 
+    // Scraps
     console.log(" > Scraps");
-    await downloadSubmissionSet(
+    await downloadPaginatedSet(
       api.getUserScraps(username),
       basePath,
       "scraps",
-      !!opts?.dataOnly
+      !!opts?.dataOnly,
+      downloadSubmissions
     );
   } else {
+    // Favorites
     const favePath = path.join(basePath, "favorites");
     await fs.mkdir(favePath, { recursive: true });
 
     console.log(" > Favorites");
-    await downloadSubmissionSet(
+    await downloadPaginatedSet(
       api.getUserFavorites(username),
       favePath,
       "favorites",
-      !!opts?.dataOnly
+      !!opts?.dataOnly,
+      downloadSubmissions
     );
   }
 
