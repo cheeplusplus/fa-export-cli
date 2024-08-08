@@ -16,7 +16,7 @@ Requires node 18 or higher. Eventually I'll get the prebuilt images working.
 ### Running
 
 * Create a file called `settings.json` based on `settings.sample.json`. Grab your FA cookies out of your FA browser session and put it in the `cookies` key. They should look like this: `a=asdf; b=asdf; s=1`
-* Run `npm run archive user <YOUR USERNAME>` to archive your user account.
+* Run `npm start archive user <YOUR USERNAME>` to archive your user account.
 
 ## Dev TODO
 
