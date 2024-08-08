@@ -1,0 +1,27 @@
+{
+  "name": "fa-export-cli",
+  "version": "0.0.1",
+  "description": "FurAffinity CLI",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cheeplusplus/fa-export-cli.git"
+  },
+  "main": "build/main.js",
+  "author": "Kauko <kauko@biosynth.link>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node build/main.js",
+    "build": "npx esbuild --bundle --platform=node --target=node20 --format=cjs --outfile=build/main.js src/main.ts"
+  },
+  "devDependencies": {
+    "@commander-js/extra-typings": "^12.1.0",
+    "@types/node": ">=18.0.0",
+    "esbuild": "^0.23.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "fa.js": "^0.5.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2018",
+        "lib": [
+            "ES2018"
+        ],
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "inlineSourceMap": true,
+        "outDir": "build",
+        "baseUrl": "."
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
