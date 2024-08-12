@@ -87,7 +87,6 @@ async function downloadPaginatedSet<T>(
     saveData?: boolean
   ) => Promise<void>
 ) {
-  console.log("data?", saveData, "download?", saveDownload);
   let page = 1;
   for await (const pageData of iterator) {
     console.log(`   - Page ${page}`);
@@ -129,6 +128,25 @@ async function archiveUser(
       await writeJson("profile.json", await api.getUserPage(username));
       await delay(DEFAULT_DELAY_MS);
 
+      // Following/followers
+      console.log(" > Following list");
+      await downloadPaginatedSet(
+        api.getUserIsWatching(username),
+        basePath,
+        "following",
+        opts.data,
+        false
+      );
+
+      console.log(" > Followers list");
+      await downloadPaginatedSet(
+        api.getUserIsWatchedBy(username),
+        basePath,
+        "followers",
+        opts.data,
+        false
+      );
+
       // Journals
       console.log(" > Journals");
       await downloadPaginatedSet(
@@ -136,7 +154,7 @@ async function archiveUser(
         basePath,
         "journals",
         opts.data,
-        opts.images
+        false
       );
       await delay(DEFAULT_DELAY_MS);
     }
