@@ -5,7 +5,7 @@ This is a CLI application to dump an FA account's gallery and account data while
 ## What's Dumped
 
 - Galleries
-- Submission metadata
+- Submission Metadata
 - Journals
 - A List of Follows/Followers
 - Shouts
@@ -40,6 +40,7 @@ For most browsers, you can follow these steps to get your FA cookie to place in 
 
 If the bottom-most item in the Network list doesn't have "Cookie", look specifically for an entry where "File" is "/"
 
+**WARNING:** This cookie represents your login to FA. Don't share it with anyone. If someone gets it they can possibly log in as you!
 
 ## Development
 
