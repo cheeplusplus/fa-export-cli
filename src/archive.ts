@@ -2,10 +2,10 @@ import { createWriteStream, existsSync } from "fs";
 import * as fs from "fs/promises";
 import { getClient } from "./api";
 import * as path from "path";
-import { SubmissionListing } from "fa.js";
+import type { SubmissionListing } from "fa.js";
 import { finished } from "stream/promises";
 import { Readable } from "stream";
-import { Command } from "@commander-js/extra-typings";
+import { Command, Option } from "@commander-js/extra-typings";
 
 const DEFAULT_DELAY_MS = 100;
 
@@ -14,7 +14,8 @@ const delay = (timeout: number) =>
 
 async function downloadSubmissions(
   dir: string,
-  submissionList: SubmissionListing[]
+  submissionList: SubmissionListing[],
+  saveData: boolean = true
 ) {
   const client = getClient();
 
@@ -36,10 +37,13 @@ async function downloadSubmissions(
       }
 
       // Write to JSON
-      await fs.writeFile(
-        path.join(dir, `${submissionItem.id}.json`),
-        JSON.stringify(fullSubmission, undefined, 4)
-      );
+      if (saveData) {
+        const dataFilename = path.join(dir, `${submissionItem.id}.json`);
+        await fs.writeFile(
+          dataFilename,
+          JSON.stringify(fullSubmission, undefined, 4)
+        );
+      }
 
       // Fetch the content data
       const contentFilename = path.join(
@@ -75,31 +79,39 @@ async function downloadPaginatedSet<T>(
   iterator: AsyncGenerator<T[], unknown, unknown>,
   basePath: string,
   prefix: string,
-  dataOnly: boolean = false,
-  downloader?: (basePath: string, page: T[]) => Promise<void>
+  saveData: boolean = true,
+  saveDownload: boolean = true,
+  downloader?: (
+    basePath: string,
+    page: T[],
+    saveData?: boolean
+  ) => Promise<void>
 ) {
+  console.log("data?", saveData, "download?", saveDownload);
   let page = 1;
   for await (const pageData of iterator) {
     console.log(`   - Page ${page}`);
 
     // Write the full page JSON
-    await fs.writeFile(
-      path.join(basePath, `${prefix}_page_${page}.json`),
-      JSON.stringify(pageData, undefined, 4)
-    );
+    if (saveData) {
+      await fs.writeFile(
+        path.join(basePath, `${prefix}_page_${page}.json`),
+        JSON.stringify(pageData, undefined, 4)
+      );
+    }
 
     page += 1;
 
     // Download contents if available
-    if (!dataOnly && downloader) {
-      await downloader(basePath, pageData);
+    if (saveDownload && downloader) {
+      await downloader(basePath, pageData, saveData);
     }
   }
 }
 
 async function archiveUser(
   username: string,
-  opts: { dataOnly?: boolean; favesOnly?: boolean }
+  opts: { images?: boolean; data?: boolean; favesOnly?: boolean }
 ) {
   const basePath = path.join("output", path.normalize(username));
   const writeJson = (name: string, data: any) =>
@@ -113,18 +125,21 @@ async function archiveUser(
   if (!opts.favesOnly) {
     // Profile
     console.log(" > Profile");
-    await writeJson("profile.json", await api.getUserPage(username));
-    await delay(DEFAULT_DELAY_MS);
+    if (opts.data) {
+      await writeJson("profile.json", await api.getUserPage(username));
+      await delay(DEFAULT_DELAY_MS);
 
-    // Journals
-    console.log(" > Journals");
-    await downloadPaginatedSet(
-      api.getUserJournals(username),
-      basePath,
-      "journals",
-      true
-    );
-    await delay(DEFAULT_DELAY_MS);
+      // Journals
+      console.log(" > Journals");
+      await downloadPaginatedSet(
+        api.getUserJournals(username),
+        basePath,
+        "journals",
+        opts.data,
+        opts.images
+      );
+      await delay(DEFAULT_DELAY_MS);
+    }
 
     // Gallery
     console.log(" > Gallery");
@@ -132,7 +147,8 @@ async function archiveUser(
       api.getUserGallery(username),
       basePath,
       "gallery",
-      !!opts?.dataOnly,
+      opts.data,
+      opts.images,
       downloadSubmissions
     );
     await delay(DEFAULT_DELAY_MS);
@@ -143,7 +159,8 @@ async function archiveUser(
       api.getUserScraps(username),
       basePath,
       "scraps",
-      !!opts?.dataOnly,
+      opts.data,
+      opts.images,
       downloadSubmissions
     );
   } else {
@@ -156,7 +173,8 @@ async function archiveUser(
       api.getUserFavorites(username),
       favePath,
       "favorites",
-      !!opts?.dataOnly,
+      opts.data,
+      opts.images,
       downloadSubmissions
     );
   }
@@ -188,20 +206,34 @@ async function archiveNotes() {
   console.log("Done!");
 }
 
+const noImagesOpt = new Option(
+  "--no-images",
+  "only save data, no images"
+).conflicts("data");
+const noDataOpt = new Option(
+  "--no-data",
+  "only save images, no data"
+).conflicts("images");
+
 export const ARCHIVE_COMMAND = new Command("archive")
   .description("archival commands")
   .addCommand(
     new Command("user")
       .description("archive user")
-      .option("--data-only", "only save data, no images")
       .argument("<username>", "Your username")
+      .addOption(noImagesOpt)
+      .addOption(noDataOpt)
       .action((username, opts) => archiveUser(username, opts))
   )
   .addCommand(
     new Command("favorites")
       .description("archive favorites")
       .argument("<username>", "Your username")
-      .action((username) => archiveUser(username, { favesOnly: true }))
+      .addOption(noImagesOpt)
+      .addOption(noDataOpt)
+      .action((username, opts) =>
+        archiveUser(username, { favesOnly: true, ...opts })
+      )
   )
   .addCommand(
     new Command("notes")
